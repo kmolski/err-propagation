@@ -19,7 +19,8 @@
         (else (list '+ a b))))
 
 (define (make-diff a b)
-  (cond ((num-eq? a 0) (list '- b))
+  (cond ((and (num-eq? a 0) (number? b)) (- b))
+        ((num-eq? a 0) (list '- b))
         ((num-eq? b 0) a)
         ((both-num? a b) (- a b))
         (else (list '- a b))))
