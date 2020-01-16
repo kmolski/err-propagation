@@ -51,6 +51,14 @@
         ((number? a) (log a))
         (else (list 'log a))))
 
+(define (make-sin x)
+  (cond ((number? x) (sin x))
+        (else (list 'sin x))))
+
+(define (make-cos x)
+  (cond ((number? x) (cos x))
+        (else (list 'cos x))))
+
 (define first-arg cadr)
 (define second-arg caddr)
 
@@ -98,6 +106,16 @@
                                         (make-log (first-arg expr))))
                  expr))
 
+(define (sin? x) (and (pair? x) (eq? (car x) 'sin)))
+(define (deriv-sin expr var)
+  (make-product (deriv (first-arg expr) var)
+                (make-cos (first-arg expr))))
+
+(define (cos? x) (and (pair? x) (eq? (car x) 'cos)))
+(define (deriv-cos expr var)
+  (make-product (deriv (first-arg expr) var)
+                (make-diff 0 (make-sin (first-arg expr)))))
+
 (define (deriv expr var)
   (cond ((number? expr) 0)
         ((variable? expr) (if (same-variable? expr var) 1 0))
@@ -112,6 +130,9 @@
         ((log? expr) (deriv-log expr var))
 
         ((power? expr) (deriv-power expr var))
+
+        ((sin? expr) (deriv-sin expr var))
+        ((cos? expr) (deriv-cos expr var))
 
         (else
          (error "unknown expression type" expr))))
