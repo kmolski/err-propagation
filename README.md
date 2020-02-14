@@ -14,6 +14,7 @@ Examples:
 --------
 
 Propagation of error for formula `2 * f * dx-avg`:
+
 ```
 scheme@(guile-user)> (err-propagate '(* 2 (* f dx-avg)) '((dx-avg 0.1) (f 0.01)))
 $1 = (sqrt (+ (^ (* (* 2 dx-avg) 0.01) 2) (^ (* (* 2 f) 0.1) 2)))
