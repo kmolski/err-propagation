@@ -106,7 +106,6 @@
 
 (define (expr-to-infix-str expr)
   ;; Display an expression in infix notation.
-  (define default-name-map '((exp . "EXP") (log . "LOG") (sin . "SIN") (cos . "COS") (sqrt . "SQRT")))
   (define op-precedence-map '((+ . 1) (- . 1) (* . 2) (/ . 2) (^ . 3)))
 
   (define (exact-fract? x) (and (number? x) (not (integer? x)) (exact? x)))
@@ -132,7 +131,7 @@
     ((? symbol? x) (symbol->string x))      ; Variable names
 
     (((and (or 'exp 'log 'sin 'cos 'sqrt) op) x) ; Single-argument functions
-     (format #f "~a(~a)" (assq-ref default-name-map op) (expr-to-infix-str x)))
+     (format #f "~a(~a)" op (expr-to-infix-str x)))
 
     (((and (or '+ '- '* '/ '^) op) a b)
      (let* ((op-prec (assq-ref op-precedence-map op))
