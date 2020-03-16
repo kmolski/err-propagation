@@ -13,49 +13,49 @@
 (define ^ expt)
 (define e (exp 1))
 
-(define (+! a b)
+(define (<+> a b)
   (cond ((num-eq? a 0) b)
         ((num-eq? b 0) a)
         ((both-num? a b) (+ a b))
         (else (list '+ a b))))
 
-(define (-! a b)
+(define (<-> a b)
   (cond ((num-eq? a 0) (if (number? b) (- b) (list '- b)))
         ((num-eq? b 0) a)
         ((both-num? a b) (- a b))
         (else (list '- a b))))
 
-(define (*! a b)
+(define (<*> a b)
   (cond ((or (num-eq? a 0) (num-eq? b 0)) 0)
         ((num-eq? a 1) b)
         ((num-eq? b 1) a)
         ((both-num? a b) (* a b))
         (else (list '* a b))))
 
-(define (/! a b)
+(define (</> a b)
   (cond ((num-eq? a 0) 0)
         ((num-eq? b 1) a)
         ((both-num? a b) (/ a b))
         (else (list '/ a b))))
 
-(define (^! a b)
+(define (<^> a b)
   (cond ((num-eq? a 1) 1)
         ((num-eq? b 0) 1)
         ((num-eq? b 1) a)
         ((both-num? a b) (^ a b))
         (else (list '^ a b))))
 
-(define (log! a)
+(define (<log> a)
   (cond ((num-eq? a 1) 0)
         ((num-eq? a e) 1)
         ((number? a) (log a))
         (else (list 'log a))))
 
-(define (sin! x)
+(define (<sin> x)
   (cond ((number? x) (sin x))
         (else (list 'sin x))))
 
-(define (cos! x)
+(define (<cos> x)
   (cond ((number? x) (cos x))
         (else (list 'cos x))))
 
@@ -65,25 +65,25 @@
     ((? number? _) 0)
     ((? symbol? _) (if (same-variable? expr var) 1 0))
 
-    (('+ a b) (+! (derive a var)
-                  (derive b var)))
-    (('- a b) (-! (derive a var)
-                  (derive b var)))
+    (('+ a b) (<+> (derive a var)
+                   (derive b var)))
+    (('- a b) (<-> (derive a var)
+                   (derive b var)))
 
-    (('* a b) (+! (*! a (derive b var))
-                  (*! (derive a var) b)))
-    (('/ a b) (/! (-! (*! (derive a var) b)
-                      (*! a (derive b var)))
-                  (^! b 2)))
+    (('* a b) (<+> (<*> a (derive b var))
+                   (<*> (derive a var) b)))
+    (('/ a b) (</> (<-> (<*> (derive a var) b)
+                        (<*> a (derive b var)))
+                   (<^> b 2)))
 
-    (('exp x) (*! (derive x var) expr))
-    (('log x) (/! (derive x var) x))
-    (('^ a b) (*! (+! (*! (derive a var) (/! b a))
-                      (*! (derive b var) (log! a)))
-                  expr))
+    (('exp x) (<*> (derive x var) expr))
+    (('log x) (</> (derive x var) x))
+    (('^ a b) (<*> (<+> (<*> (derive a var) (</> b a))
+                        (<*> (derive b var) (<log> a)))
+                   expr))
 
-    (('sin x) (*! (derive x var) (cos! x)))
-    (('cos x) (*! (derive x var) (-! 0 (sin! x))))
+    (('sin x) (<*> (derive x var) (<cos> x)))
+    (('cos x) (<*> (derive x var) (<-> 0 (<sin> x))))
 
     (_ (error "unknown expression type" expr))))
 
@@ -100,7 +100,7 @@
         (let* ((var (caar varl))        ; Symbol of the current variable
                (var-error (cadar varl)) ; Error for current variable
                (expr-by-var (derive expr var))) ; Derivative of expr with respect to var
-          (square-sum (cons (^! (*! expr-by-var var-error) 2) elems) (cdr varl)))))
+          (square-sum (cons (<^> (<*> expr-by-var var-error) 2) elems) (cdr varl)))))
   ;; The result is the square root of the sum.
   (list 'sqrt (square-sum '() vars)))
 
@@ -113,7 +113,7 @@
 
   (define (wrap-in-parens x) (format #f "(~a)" x))
 
-  (define (subexpr-to-str part order)
+  (define (subexpr-to-str part prev-prec)
     ;; Convert subexpression into a string
     (let ((part-str (expr-to-infix-str part)))
       (match part
@@ -121,7 +121,7 @@
              ((or 'exp 'log 'sin 'cos 'sqrt) _)) part-str)
         ;; Put parens around part if it has a binary operator
         ;; and the previous operator has higher precedence
-        ((op _ _) (if (<= (assq-ref op-precedence-map op) order)
+        ((op _ _) (if (<= (assq-ref op-precedence-map op) prev-prec)
                       (wrap-in-parens part-str)
                       part-str))
         (_ (error "unknown expression type" part)))))
@@ -131,13 +131,13 @@
     ((? number? x) (number->string x))      ; Floats and integers
     ((? symbol? x) (symbol->string x))      ; Variable names
 
-    (((and (or 'exp 'log 'sin 'cos 'sqrt) op) x)  ; Single-argument functions
+    (((and (or 'exp 'log 'sin 'cos 'sqrt) op) x) ; Single-argument functions
      (format #f "~a(~a)" (assq-ref default-name-map op) (expr-to-infix-str x)))
 
     (((and (or '+ '- '* '/ '^) op) a b)
-     (let* ((op-order (assq-ref op-precedence-map op))
-            (a-str (subexpr-to-str a op-order))
-            (b-str (subexpr-to-str b op-order)))
+     (let* ((op-prec (assq-ref op-precedence-map op))
+            (a-str (subexpr-to-str a op-prec))
+            (b-str (subexpr-to-str b op-prec)))
        (format #f "~a ~a ~a" a-str op b-str))) ; Two-argument infix operators
 
     (_ (error "unknown expression type" expr))))
