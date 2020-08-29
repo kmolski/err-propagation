@@ -45,3 +45,8 @@ or turned into an Excel-compatible infix formula:
 scheme@(guile-user)> (expr-to-infix-str $1)
 $3 = "SQRT(((2 * dx-avg) * 0.01) ^ 2 + ((2 * f) * 0.1) ^ 2)"
 ```
+
+License:
+--------
+
+[GNU General Public License version 3](https://opensource.org/licenses/GPL-3.0)
